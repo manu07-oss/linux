@@ -1,0 +1,236 @@
+1. File Permissions (chmod)
+Linux permissions = r (4), w (2), x (1)
+Example:
+
+chmod 755 file.sh
+Owner → 7 (rwx)
+Group → 5 (r-x)
+Others → 5 (r-x)
+Linux uses a permission model based on read, write, execute. I usually use numeric notation like 755 or symbolic like chmod u+x. For example, scripts need execute permission to run.
+
+2. Hard vs Soft Links
+
+Hard links share the same inode, so even if the original file is deleted, data remains. Soft links are symbolic pointers and break if the original file is removed.
+
+ln file.txt hardlink.txt
+ln -s file.txt softlink.txt
+
+3. Process Management
+ps aux – Snapshot debugging
+Scenario:
+Production API is slow, but system is still responding.
+ps aux | grep java
+
+I use ps aux when I need a quick snapshot of running processes to identify abnormal resource usage
+
+top / htop – Live monitoring
+Scenario:
+Server CPU suddenly spikes to 100%-80% 
+top or htop
+Why:
+
+Real-time CPU, memory usage
+Sort by CPU (Shift + P) or Memory (Shift + M)
+Easier to spot problematic process instantly
+
+Real example:
+
+During deployment, one container started looping → CPU spike → detected via htop
+
+Interview line:
+
+“I use top/htop for real-time monitoring when there is a sudden spike in CPU or memory
+
+
+kill -9 <pid> – Force kill stuck process
+
+Scenario:
+Application is stuck / not responding to normal kill
+
+Steps:
+
+kill <pid>      # Try graceful first (SIGTERM)
+kill -9 <pid>   # Force kill (SIGKILL)
+
+Real example:
+
+Jenkins job stuck
+ECS task hung
+Zombie child processes not clearing
+
+Interview line:
+
+“If a process doesn’t terminate gracefully, I use SIGKILL (-9) to forcefully stop it.”
+
+
+Zombie Process (Important interview point)
+
+Scenario:
+You see process like:
+
+ps aux | grep Z
+
+Why it happens:
+
+Parent didn’t collect child process exit status
+
+Fix:
+
+Restart parent process
+or
+Kill parent → system cleans zombie
+
+Interview line:
+
+“Zombie processes occur when child processes exit but parent doesn’t read their status. I identify them using ps and resolve by restarting or killing the parent process.”
+
+
+Foreground vs Background
+
+Scenario:
+Running long script or deployment
+
+Commands:
+
+./deploy.sh &     # Run in background
+jobs              # Check jobs
+fg %1             # Bring to foreground
+
+Real example:
+
+Running long Terraform apply
+Background log monitoring
+
+In real-time, I use ps aux for quick snapshots to identify processes, and top/htop for live monitoring during CPU or memory spikes. If a process is unresponsive, I first try graceful termination using kill, and if that fails, I use kill -9 to force stop it. I’ve also handled zombie processes by identifying them using ps and resolving by restarting or killing the parent process. Additionally, I use background and foreground job control when running long tasks like deployments.”
+
+
+. df -h – Filesystem usage
+
+Scenario:
+Production server alerts → “Disk almost full (90%+)”
+
+What you do:
+
+df -h
+
+Why:
+
+Shows overall filesystem usage (/, /var, /home, etc.)
+Helps identify which partition is full
+
+Real example:
+
+/var partition full → logs consuming space → application crashes
+
+Interview line:
+
+“I use df -h to quickly check filesystem usage and identify which partition is running out of space.”
+
+✅ 2. du -sh * – Directory-level analysis
+
+Scenario:
+You found /var is full → now need to find what exactly is filling it
+
+What you do:
+
+cd /var
+du -sh *
+
+Why:
+
+Shows size of each directory
+Helps pinpoint heavy folders (logs, cache, backups)
+
+Deep dive (real troubleshooting):
+
+du -sh /var/log/*
+
+Real example:
+
+Log files (like /var/log/nginx or app logs) growing huge
+Old backups not cleaned
+
+Interview line:
+
+“After identifying a full filesystem using df, I use du to drill down and find which directories are consuming space.”
+
+free -m – Memory usage
+
+Scenario:
+Application is slow / server lagging / alerts for high memory usage
+
+What you do:
+
+free -m
+
+Why:
+
+Shows total, used, free memory
+Shows swap usage (very important in troubleshooting)
+
+Key understanding:
+
+Low free memory + high swap = performance issue
+
+Real example:
+
+Java app consuming too much RAM → system starts swapping → slow API
+
+Interview line:
+
+“I use free -m to check RAM and swap usage. High swap usage usually indicates memory pressure affecting performance.”
+
+✅ 3. free -m – Memory usage
+
+Scenario:
+Application is slow / server lagging / alerts for high memory usage
+
+What you do:
+
+free -m
+
+Why:
+
+Shows total, used, free memory
+Shows swap usage (very important in troubleshooting)
+
+Key understanding:
+
+Low free memory + high swap = performance issue
+
+Real example:
+
+Java app consuming too much RAM → system starts swapping → slow API
+
+Interview line:
+
+“I use free -m to check RAM and swap usage. High swap usage usually indicates memory pressure affecting performance.”
+
+✅ 4. Combined Real Scenario (Very Important 🔥)
+
+Scenario:
+Website is down or very slow
+
+Step-by-step approach:
+
+Check disk:
+
+df -h
+
+→ If full → app may crash (no space for logs/temp)
+
+Drill down:
+
+du -sh /var/*
+
+Check memory:
+
+free -m
+Correlate:
+High memory → app issue
+Disk full → log/backup issue
+🔥 Strong Interview Answer (Final Version)
+
+You can confidently say:
+
+“In real-time, I use df -h to check overall filesystem usage and identify if any partition is full. Once identified, I use du -sh to drill down into directories and find what is consuming space, such as logs or backups. For memory, I use free -m to monitor RAM and swap usage. High swap usage usually indicates memory pressure, which can impact application performance. I typically combine these checks during troubleshooting when a system becomes slow or unresponssive"
